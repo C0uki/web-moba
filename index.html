@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミニMOBA - Web MOBA</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- 上部バー -->
+<div id="topbar" class="hidden">
+  <span id="score-blue" class="score blue">0</span>
+  <span id="game-timer">00:00</span>
+  <span id="score-red" class="score red">0</span>
+</div>
+
+<!-- キルフィード -->
+<div id="feed" class="hidden"></div>
+
+<!-- センターメッセージ -->
+<div id="center-msg"></div>
+
+<!-- リスポーン表示 -->
+<div id="respawn-note" class="hidden"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="portrait">
+    <div id="p-letter">?</div>
+    <div id="p-level">1</div>
+  </div>
+  <div id="bars">
+    <div class="bar hp"><div id="hpfill"></div><span id="hptext"></span></div>
+    <div class="bar mana"><div id="manafill"></div><span id="manatext"></span></div>
+    <div class="bar xp"><div id="xpfill"></div></div>
+  </div>
+  <div id="abilities"></div>
+  <div id="stats-mini">
+    <div id="stat-gold">0 <span class="g">G</span></div>
+    <div id="stat-kda">0 / 0</div>
+    <div id="stat-cs">CS 0</div>
+    <button id="shop-btn">ショップ (P)</button>
+  </div>
+</div>
+
+<div id="hint" class="hidden">H: 操作説明 / P: ショップ</div>
+
+<!-- ショップ -->
+<div id="shop" class="hidden">
+  <h3>ショップ <span id="shop-note"></span></h3>
+  <div id="shop-items"></div>
+  <div id="shop-stats"></div>
+  <div class="shop-close">Pキーで閉じる</div>
+</div>
+
+<!-- ヘルプ -->
+<div id="help" class="hidden">
+  <h3>操作説明</h3>
+  <table>
+    <tr><td>右クリック / 左クリック</td><td>移動(敵の上で攻撃)</td></tr>
+    <tr><td>Q / W / E</td><td>スキル(マウス方向に発動)</td></tr>
+    <tr><td>A</td><td>アタックムーブ(マウス位置へ)</td></tr>
+    <tr><td>S</td><td>停止</td></tr>
+    <tr><td>B</td><td>リコール(拠点へ帰還)</td></tr>
+    <tr><td>P</td><td>ショップ(自陣の泉でのみ購入可)</td></tr>
+    <tr><td>ホイール</td><td>ズーム</td></tr>
+    <tr><td>M</td><td>ミュート</td></tr>
+    <tr><td>Esc</td><td>一時停止</td></tr>
+  </table>
+  <p>ミニオンや敵を倒してゴールドと経験値を稼ぎ、レーンのタワーを折って敵のネクサスを破壊すれば勝利!</p>
+  <div class="shop-close">Hキーで閉じる</div>
+</div>
+
+<!-- 一時停止 -->
+<div id="pause-overlay" class="hidden"><div>一時停止中<br><small>Escで再開</small></div></div>
+
+<!-- ヒーロー選択 -->
+<div id="overlay-select">
+  <h1>ミニMOBA</h1>
+  <p class="sub">ヒーローを選んで出撃しよう (3 vs 3・敵ネクサス破壊で勝利)</p>
+  <div id="hero-cards"></div>
+</div>
+
+<!-- ゲーム終了 -->
+<div id="overlay-over" class="hidden">
+  <h1 id="over-title"></h1>
+  <p id="over-stats"></p>
+  <button id="restart-btn">もう一度遊ぶ</button>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/data.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/game.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/input.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
