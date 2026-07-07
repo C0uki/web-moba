@@ -173,8 +173,14 @@ html, body {
 #overlay-select {
   position: fixed; inset: 0; z-index: 50;
   background: radial-gradient(ellipse at center, #16281a 0%, #0b120d 75%);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center;
   overflow-y: auto; padding: 30px 0;
+}
+/* コンテンツが画面より縦長のとき、中央寄せのままだと上部がスクロールで
+   見えなくなるブラウザの仕様があるため、前後にスペーサーを置いて解決する */
+#overlay-select::before, #overlay-select::after {
+  content: '';
+  flex: 1 0 auto;
 }
 #overlay-select h1 {
   font-size: 52px; letter-spacing: 6px; color: #ffd54f;
