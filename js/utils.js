@@ -94,6 +94,7 @@ function formatTime(sec) {
 function isRevealed(g, u) {
   if (!u.stealth) return true;
   const seekerTeam = enemyOf(u.team);
+  if (g.detectVision && g.detectVision[seekerTeam] > 0) return true;
   for (const s of g.units) {
     if (s.team !== seekerTeam || s.dead) continue;
     if (distU(s, u) <= 260) return true;

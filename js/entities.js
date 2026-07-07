@@ -237,7 +237,7 @@ class Hero extends Unit {
     this.items = [];
     this.buildIdx = 0;
 
-    this.cds = [0, 0, 0];
+    this.cds = new Array(this.def.abilities.length).fill(0);
     this.buffs = [];
     this.order = null;
     this.dashState = null;
@@ -293,7 +293,7 @@ class Hero extends Unit {
     this.armor = d.armor + d.armorGrow * (L - 1) + it.armor + bf.armor;
     this.speed = d.speed + it.speed + bf.speed;
     this.atkSpeedMult = 1 + it.atkSpeed + bf.atkSpeed;
-    this.lifesteal = it.lifesteal;
+    this.lifesteal = it.lifesteal + (bf.lifesteal || 0);
     this.range = d.range;
     this.atkCdBase = d.atkCd;
     this.hpRegen = 1.5 + 0.4 * L;
@@ -318,7 +318,7 @@ class Hero extends Unit {
   }
 
   update(g, dt) {
-    for (let i = 0; i < 3; i++) if (this.cds[i] > 0) this.cds[i] -= dt;
+    for (let i = 0; i < this.cds.length; i++) if (this.cds[i] > 0) this.cds[i] -= dt;
     this.buffs = this.buffs.filter(b => (b.t -= dt) > 0);
     this.recompute();
     this.tickTimers(dt);

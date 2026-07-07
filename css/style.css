@@ -105,6 +105,8 @@ html, body {
   display: flex; align-items: center; justify-content: center;
 }
 .slot.nomana { border-color: #3a4f70; }
+.slot.ultimate { border-color: #caa64c; background: #2a2412; }
+.slot.ultimate .ab-key { color: #ffd54f; }
 .slot .ab-cd.hidden { display: none; }
 
 #stats-mini { display: flex; flex-direction: column; gap: 3px; font-size: 13px; min-width: 92px; }

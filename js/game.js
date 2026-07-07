@@ -23,6 +23,7 @@ class Game {
 
     this.kills = { blue: 0, red: 0 };
     this.firstBlood = false;
+    this.detectVision = { blue: 0, red: 0 };
 
     this.waveT = CONFIG.FIRST_WAVE;
 
@@ -31,7 +32,7 @@ class Game {
 
     this.camera = { x: this.player.x, y: this.player.y, zoom: 0.85 };
 
-    this.msg('右クリックで移動・敵を攻撃 / Q W E でスキル!', 4);
+    this.msg('右クリックで移動・敵を攻撃 / Q W E Rでスキル!', 4);
   }
 
   // ---- セットアップ ----
@@ -94,6 +95,10 @@ class Game {
     if (this.waveT <= 0) {
       this.waveT = CONFIG.WAVE_INTERVAL;
       this.spawnWave();
+    }
+
+    for (const t of ['blue', 'red']) {
+      if (this.detectVision[t] > 0) this.detectVision[t] -= dt;
     }
 
     this.updateInvuln();

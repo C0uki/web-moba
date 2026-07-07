@@ -70,8 +70,8 @@ function setupInput(game, canvas) {
     if (game.paused) return;
 
     switch (key) {
-      case 'q': case 'w': case 'e': {
-        const idx = { q: 0, w: 1, e: 2 }[key];
+      case 'q': case 'w': case 'e': case 'r': {
+        const idx = { q: 0, w: 1, e: 2, r: 3 }[key];
         const w = mouseWorld();
         game.castAbility(p, idx, w.x, w.y);
         break;
