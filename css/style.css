@@ -198,6 +198,17 @@ html, body {
 }
 .lane-btn:hover { border-color: #5d9a68; }
 .lane-btn.active { border-color: #ffd54f; background: #2a2412; color: #ffd54f; }
+#role-picker {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 26px; flex-wrap: wrap;
+  justify-content: center; max-width: 700px;
+}
+.role-btn {
+  background: #1a2a1e; border: 2px solid #2c4433; color: #cfe8cf;
+  border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: bold;
+  cursor: pointer; font-family: inherit; transition: border-color 0.12s, background 0.12s;
+}
+.role-btn:hover { border-color: #5d9a68; }
+.role-btn.active { border-color: #8ec8ff; background: #16232e; color: #8ec8ff; }
 #hero-cards {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;
   max-width: 1160px; padding: 0 16px;
