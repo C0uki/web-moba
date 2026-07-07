@@ -48,7 +48,10 @@ const MINION_TYPES = {
 const TOWER_STATS = { hp: 3300, ad: 190, range: 400, atkCd: 1.5, radius: 34, goldKiller: 150, goldTeam: 120, xp: 200 };
 const NEXUS_STATS = { hp: 4500, radius: 55 };
 
-const BOT_NAMES = ['ユキ', 'レン', 'ソラ', 'カイ', 'ミコ', 'ハル', 'リン', 'アオイ'];
+const BOT_NAMES = ['ユキ', 'レン', 'ソラ', 'カイ', 'ミコ', 'ハル', 'リン', 'アオイ', 'ツバサ', 'ノゾミ', 'アキラ', 'メイ'];
+
+// 5v5でのレーン配分 (プレイヤーはmid固定、残り4枠に味方ボット、5枠全てに敵ボット)
+const LANE_ASSIGN_5 = ['top', 'top', 'mid', 'bot', 'bot'];
 
 // ---- アイテム ----
 const ITEMS = [

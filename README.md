@@ -1,6 +1,6 @@
 # ミニMOBA — Webで遊べるMOBA
 
-ブラウザだけで遊べる 3 vs 3 のミニMOBAゲームです。ビルド不要・依存ライブラリなし(素のHTML/CSS/JavaScript + Canvas)。
+ブラウザだけで遊べる 5 vs 5 のミニMOBAゲームです。ビルド不要・依存ライブラリなし(素のHTML/CSS/JavaScript + Canvas)。
 
 ![genre](https://img.shields.io/badge/genre-MOBA-green) ![deps](https://img.shields.io/badge/deps-none-blue)
 
@@ -18,8 +18,8 @@ python3 -m http.server 8000
 
 ### ルール
 
-- **3 vs 3**(あなた + 味方ボット2体 vs 敵ボット3体)
-- 3本のレーンにはミニオンが定期的に進軍し、各レーンには**タワーが2本**ずつ
+- **5 vs 5**(あなた + 味方ボット4体 vs 敵ボット5体)
+- top/botレーンは2人ずつ、midは1人ずつの布陣。3本のレーンにはミニオンが定期的に進軍し、各レーンには**タワーが2本**ずつ
 - タワーは外側から順にしか壊せない(内側タワーは無敵表示)
 - どこかのレーンのタワーを2本折ると敵**ネクサス**が攻撃可能に
 - **敵ネクサスを破壊すれば勝利!** 自陣ネクサスが壊されたら敗北

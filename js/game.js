@@ -59,16 +59,18 @@ class Game {
     this.player = new Hero('blue', playerKey, { isBot: false, name: 'あなた', lane: 'mid' });
     this.heroes.push(this.player);
 
-    // 味方ボット2体 (プレイヤーと違うヒーロー優先)
+    // 味方ボット4体 (プレイヤーのmidを除く top/top/bot/bot の4枠)
+    const allyLanes = LANE_ASSIGN_5.filter(l => l !== 'mid');
     const allyKeys = shuffle(HERO_KEYS.filter(k => k !== playerKey));
-    while (allyKeys.length < 2) allyKeys.push(HERO_KEYS[randInt(0, HERO_KEYS.length - 1)]);
-    ['top', 'bot'].forEach((lane, i) => {
+    while (allyKeys.length < allyLanes.length) allyKeys.push(HERO_KEYS[randInt(0, HERO_KEYS.length - 1)]);
+    allyLanes.forEach((lane, i) => {
       this.heroes.push(new Hero('blue', allyKeys[i], { isBot: true, name: names[ni++], lane }));
     });
 
-    // 敵ボット3体
+    // 敵ボット5体 (top/top/mid/bot/bot の5枠全て)
     const foeKeys = shuffle(HERO_KEYS);
-    LANE_KEYS.forEach((lane, i) => {
+    while (foeKeys.length < LANE_ASSIGN_5.length) foeKeys.push(HERO_KEYS[randInt(0, HERO_KEYS.length - 1)]);
+    LANE_ASSIGN_5.forEach((lane, i) => {
       this.heroes.push(new Hero('red', foeKeys[i], { isBot: true, name: names[ni++], lane }));
     });
 
