@@ -12,6 +12,7 @@ class Game {
     this.heroes = [];
     this.towers = [];
     this.towerMap = { blue: {}, red: {} };
+    this.nexusTowerMap = { blue: [], red: [] };
     this.nexus = {};
     this.projectiles = [];
     this.effects = [];
@@ -51,6 +52,21 @@ class Game {
       const n = new Nexus(team, bx, by);
       this.nexus[team] = n;
       this.units.push(n);
+
+      // ネクサスを守る専用タワー2本 (両脇に配置)
+      const [ex, ey] = BASES[enemyOf(team)];
+      const dir = norm(ex - bx, ey - by) || { x: 1, y: 0 };
+      const perp = { x: -dir.y, y: dir.x };
+      const guardSpots = [
+        [bx + dir.x * 90 + perp.x * 150, by + dir.y * 90 + perp.y * 150],
+        [bx + dir.x * 90 - perp.x * 150, by + dir.y * 90 - perp.y * 150],
+      ];
+      for (const [tx, ty] of guardSpots) {
+        const t = new Tower(team, tx, ty, 'nexus', 3);
+        this.towers.push(t);
+        this.units.push(t);
+        this.nexusTowerMap[team].push(t);
+      }
     }
   }
 
@@ -160,6 +176,7 @@ class Game {
         if (t1.dead && t2.dead) anyLaneOpen = true;
       }
       this.nexus[team].invulnerable = !anyLaneOpen;
+      for (const t of this.nexusTowerMap[team]) t.invulnerable = !anyLaneOpen;
     }
   }
 
