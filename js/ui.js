@@ -61,7 +61,7 @@ const UI = {
     this.slotEls = [];
     p.def.abilities.forEach((a, i) => {
       const slot = document.createElement('div');
-      slot.className = 'slot';
+      slot.className = 'slot' + (a.key === 'R' ? ' ultimate' : '');
       slot.title = `${a.name} (CD ${a.cd}秒 / マナ ${a.mana})\n${a.desc}`;
       slot.innerHTML = `<span class="ab-key">${a.key}</span><span class="ab-mana">${a.mana}</span><span class="ab-cd hidden"></span>`;
       ab.appendChild(slot);
