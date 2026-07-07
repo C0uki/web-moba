@@ -388,11 +388,21 @@ function mkChain({ key, name, desc, cd, mana, range, jumps, jumpRadius, color, d
   };
 }
 
+// ---- ロール ----
+const ROLES = [
+  { key: 'mage', label: 'メイジ' },
+  { key: 'fighter', label: 'ファイター' },
+  { key: 'marksman', label: 'マークスマン' },
+  { key: 'assassin', label: 'アサシン' },
+  { key: 'support', label: 'サポート' },
+  { key: 'tank', label: 'タンク' },
+];
+
 // ---- ヒーロー ----
-// ability: { key, name, desc, cd, mana, ai:{mode,range}, cast(g,h,tx,ty)→false=不発 }
+// ability: { key, role, name, desc, cd, mana, ai:{mode,range}, cast(g,h,tx,ty)→false=不発 }
 const HEROES = {
   blaze: {
-    key: 'blaze', name: 'ブレイズ', title: '劫火の魔導士', color: '#ff8a50', letter: 'B',
+    key: 'blaze', role: 'mage', name: 'ブレイズ', title: '劫火の魔導士', color: '#ff8a50', letter: 'B',
     desc: '遠距離から火力を叩き込むメイジ。スキルコンボで敵を一気に焼き払う。打たれ弱いので立ち回りが重要。',
     hp: 540, hpGrow: 82, mana: 420, manaGrow: 48,
     ad: 52, adGrow: 3.0, power: 15, powerGrow: 9,
@@ -454,7 +464,7 @@ const HEROES = {
   },
 
   thorn: {
-    key: 'thorn', name: 'ソーン', title: '鉄壁の剣闘士', color: '#8bc34a', letter: 'T',
+    key: 'thorn', role: 'fighter', name: 'ソーン', title: '鉄壁の剣闘士', color: '#8bc34a', letter: 'T',
     desc: '接近戦で暴れる重戦士。シールドと突進で先陣を切り、タフさで敵陣を割る。初心者におすすめ。',
     hp: 680, hpGrow: 102, mana: 280, manaGrow: 32,
     ad: 62, adGrow: 3.6, power: 0, powerGrow: 0,
@@ -516,7 +526,7 @@ const HEROES = {
   },
 
   vex: {
-    key: 'vex', name: 'ヴェックス', title: '疾風の狩人', color: '#4fc3f7', letter: 'V',
+    key: 'vex', role: 'marksman', name: 'ヴェックス', title: '疾風の狩人', color: '#4fc3f7', letter: 'V',
     desc: '長射程の通常攻撃で削るマークスマン。攻撃速度バフと回避ステップで距離を保ちながら戦う。',
     hp: 560, hpGrow: 86, mana: 300, manaGrow: 36,
     ad: 58, adGrow: 3.4, power: 0, powerGrow: 0,
@@ -576,7 +586,7 @@ const HEROES = {
   },
 
   kestrel: {
-    key: 'kestrel', name: 'ケストレル', title: '影渡りの暗殺者', color: '#c77dff', letter: 'K',
+    key: 'kestrel', role: 'assassin', name: 'ケストレル', title: '影渡りの暗殺者', color: '#c77dff', letter: 'K',
     desc: '死角から仕留めるアサシン。ステルスで接近し、瀕死の獲物には止めの一撃が突き刺さる。被弾には弱いので一撃離脱が命。',
     hp: 480, hpGrow: 70, mana: 260, manaGrow: 30,
     ad: 66, adGrow: 3.8, power: 0, powerGrow: 0,
@@ -655,7 +665,7 @@ const HEROES = {
   },
 
   sera: {
-    key: 'sera', name: 'セラ', title: '癒しの巫女', color: '#4dd0e1', letter: 'S',
+    key: 'sera', role: 'support', name: 'セラ', title: '癒しの巫女', color: '#4dd0e1', letter: 'S',
     desc: '味方を癒し守るサポート。単体火力は低いが、回復・シールド・速度バフで戦況を支える。味方の近くで戦おう。',
     hp: 520, hpGrow: 78, mana: 380, manaGrow: 44,
     ad: 38, adGrow: 2.0, power: 10, powerGrow: 6,
@@ -712,7 +722,7 @@ const HEROES = {
   },
 
   grom: {
-    key: 'grom', name: 'グロム', title: '不屈の突撃兵', color: '#a1887f', letter: 'G',
+    key: 'grom', role: 'tank', name: 'グロム', title: '不屈の突撃兵', color: '#a1887f', letter: 'G',
     desc: '突っ込んでスタンを撒く前衛タンク。硬さと足止めで味方に戦機を作る、集団戦のイニシエーター。',
     hp: 760, hpGrow: 112, mana: 250, manaGrow: 28,
     ad: 56, adGrow: 3.0, power: 0, powerGrow: 0,
@@ -772,7 +782,7 @@ const HEROES = {
   },
 
   nyx: {
-    key: 'nyx', name: 'ナイクス', title: 'ヴォイドの魔導士', color: '#673ab7', letter: 'N',
+    key: 'nyx', role: 'mage', name: 'ナイクス', title: 'ヴォイドの魔導士', color: '#673ab7', letter: 'N',
     desc: '虚空の力を操るメイジ。スロー付きの直線弾と設置型の大爆発で戦線を制圧する。',
     hp: 530, hpGrow: 80, mana: 410, manaGrow: 46,
     ad: 34, adGrow: 2.0, power: 16, powerGrow: 9,
@@ -801,7 +811,7 @@ const HEROES = {
   },
 
   pyra: {
-    key: 'pyra', name: 'パイラ', title: '紅蓮の魔導士', color: '#ff5722', letter: 'P',
+    key: 'pyra', role: 'mage', name: 'パイラ', title: '紅蓮の魔導士', color: '#ff5722', letter: 'P',
     desc: '炎で全てを焼き尽くすメイジ。貫通する炎の槍とメテオで広範囲を制圧する。',
     hp: 525, hpGrow: 79, mana: 405, manaGrow: 45,
     ad: 34, adGrow: 2.0, power: 17, powerGrow: 9,
@@ -828,7 +838,7 @@ const HEROES = {
   },
 
   glacia: {
-    key: 'glacia', name: 'グラシア', title: '氷結の魔導士', color: '#00acc1', letter: 'Gc',
+    key: 'glacia', role: 'mage', name: 'グラシア', title: '氷結の魔導士', color: '#00acc1', letter: 'Gc',
     desc: '氷で敵を縛るメイジ。強力なスロー効果で追撃と逃走をコントロールする。',
     hp: 535, hpGrow: 80, mana: 400, manaGrow: 45,
     ad: 34, adGrow: 2.0, power: 15, powerGrow: 8,
@@ -858,7 +868,7 @@ const HEROES = {
   },
 
   volt: {
-    key: 'volt', name: 'ヴォルト', title: '雷光の魔導士', color: '#ffca28', letter: 'Vo',
+    key: 'volt', role: 'mage', name: 'ヴォルト', title: '雷光の魔導士', color: '#ffca28', letter: 'Vo',
     desc: '雷を操るメイジ。連鎖する稲妻で密集した敵をまとめて焼く。',
     hp: 520, hpGrow: 78, mana: 415, manaGrow: 47,
     ad: 34, adGrow: 2.0, power: 16, powerGrow: 9,
@@ -887,7 +897,7 @@ const HEROES = {
   },
 
   ragnar: {
-    key: 'ragnar', name: 'ラグナー', title: '猛る戦斧の戦士', color: '#d84315', letter: 'R',
+    key: 'ragnar', role: 'fighter', name: 'ラグナー', title: '猛る戦斧の戦士', color: '#d84315', letter: 'R',
     desc: '怒りに任せて暴れるバーサーカー。吸血と攻撃力アップで長期戦を制す。',
     hp: 690, hpGrow: 104, mana: 260, manaGrow: 30,
     ad: 60, adGrow: 3.5, power: 0, powerGrow: 0,
@@ -915,7 +925,7 @@ const HEROES = {
   },
 
   ashen: {
-    key: 'ashen', name: 'アッシェン', title: '双刃の剣士', color: '#757575', letter: 'A',
+    key: 'ashen', role: 'fighter', name: 'アッシェン', title: '双刃の剣士', color: '#757575', letter: 'A',
     desc: '素早い連続攻撃で敵を切り刻む剣士。瀕死の敵への追撃が得意。',
     hp: 500, hpGrow: 74, mana: 270, manaGrow: 31,
     ad: 64, adGrow: 3.7, power: 0, powerGrow: 0,
@@ -943,7 +953,7 @@ const HEROES = {
   },
 
   brue: {
-    key: 'brue', name: 'ブルー', title: '不動の巨漢', color: '#5d4037', letter: 'Br',
+    key: 'brue', role: 'fighter', name: 'ブルー', title: '不動の巨漢', color: '#5d4037', letter: 'Br',
     desc: '鈍重だが打たれ強い前衛。シールドとスタンで戦線を支える。',
     hp: 745, hpGrow: 110, mana: 240, manaGrow: 27,
     ad: 54, adGrow: 2.9, power: 0, powerGrow: 0,
@@ -973,7 +983,7 @@ const HEROES = {
   },
 
   dax: {
-    key: 'dax', name: 'ダックス', title: '街の喧嘩屋', color: '#f4511e', letter: 'D',
+    key: 'dax', role: 'fighter', name: 'ダックス', title: '街の喧嘩屋', color: '#f4511e', letter: 'D',
     desc: '素早い踏み込みと回復で粘り強く戦うブロウラー。',
     hp: 560, hpGrow: 84, mana: 250, manaGrow: 29,
     ad: 60, adGrow: 3.4, power: 0, powerGrow: 0,
@@ -1002,7 +1012,7 @@ const HEROES = {
   },
 
   aria: {
-    key: 'aria', name: 'アリア', title: '狩猟のクロスボウ使い', color: '#ec407a', letter: 'Ar',
+    key: 'aria', role: 'marksman', name: 'アリア', title: '狩猟のクロスボウ使い', color: '#ec407a', letter: 'Ar',
     desc: '貫通する矢と足止めの罠で敵を追い詰めるマークスマン。',
     hp: 545, hpGrow: 83, mana: 290, manaGrow: 35,
     ad: 56, adGrow: 3.3, power: 0, powerGrow: 0,
@@ -1031,7 +1041,7 @@ const HEROES = {
   },
 
   ronin: {
-    key: 'ronin', name: 'ロニン', title: '弓術の達人', color: '#37474f', letter: 'Ro',
+    key: 'ronin', role: 'marksman', name: 'ロニン', title: '弓術の達人', color: '#37474f', letter: 'Ro',
     desc: '長射程の矢で着実に敵を削るレンジャー。',
     hp: 540, hpGrow: 82, mana: 285, manaGrow: 34,
     ad: 57, adGrow: 3.3, power: 0, powerGrow: 0,
@@ -1059,7 +1069,7 @@ const HEROES = {
   },
 
   mira: {
-    key: 'mira', name: 'ミラ', title: '孤高の狙撃手', color: '#7e57c2', letter: 'M',
+    key: 'mira', role: 'marksman', name: 'ミラ', title: '孤高の狙撃手', color: '#7e57c2', letter: 'M',
     desc: '超長射程の一撃と隠密で敵を仕留めるスナイパー。',
     hp: 500, hpGrow: 76, mana: 300, manaGrow: 34,
     ad: 52, adGrow: 3.0, power: 0, powerGrow: 0,
@@ -1087,7 +1097,7 @@ const HEROES = {
   },
 
   zeke: {
-    key: 'zeke', name: 'ジーク', title: '早撃ちのガンナー', color: '#ffa726', letter: 'Z',
+    key: 'zeke', role: 'marksman', name: 'ジーク', title: '早撃ちのガンナー', color: '#ffa726', letter: 'Z',
     desc: '連射と攻撃速度バフで手数を稼ぐガンナー。',
     hp: 550, hpGrow: 83, mana: 295, manaGrow: 35,
     ad: 57, adGrow: 3.3, power: 0, powerGrow: 0,
@@ -1114,7 +1124,7 @@ const HEROES = {
   },
 
   ivy: {
-    key: 'ivy', name: 'アイビー', title: '毒使いの暗殺者', color: '#43a047', letter: 'I',
+    key: 'ivy', role: 'assassin', name: 'アイビー', title: '毒使いの暗殺者', color: '#43a047', letter: 'I',
     desc: '突進と処刑技で瀕死の敵を仕留めるアサシン。',
     hp: 470, hpGrow: 69, mana: 265, manaGrow: 29,
     ad: 64, adGrow: 3.7, power: 0, powerGrow: 0,
@@ -1143,7 +1153,7 @@ const HEROES = {
   },
 
   kade: {
-    key: 'kade', name: 'ケイド', title: '刃舞う暗殺者', color: '#5c6bc0', letter: 'Kd',
+    key: 'kade', role: 'assassin', name: 'ケイド', title: '刃舞う暗殺者', color: '#5c6bc0', letter: 'Kd',
     desc: '鋭い踏み込みで一気に距離を詰めるアサシン。',
     hp: 475, hpGrow: 70, mana: 260, manaGrow: 29,
     ad: 65, adGrow: 3.7, power: 0, powerGrow: 0,
@@ -1171,7 +1181,7 @@ const HEROES = {
   },
 
   sable: {
-    key: 'sable', name: 'セイブル', title: '闇に潜む刺客', color: '#212121', letter: 'Sb',
+    key: 'sable', role: 'assassin', name: 'セイブル', title: '闇に潜む刺客', color: '#212121', letter: 'Sb',
     desc: 'ステルスと処刑技で不意を打つアサシン。',
     hp: 465, hpGrow: 68, mana: 255, manaGrow: 28,
     ad: 66, adGrow: 3.8, power: 0, powerGrow: 0,
@@ -1199,7 +1209,7 @@ const HEROES = {
   },
 
   talon: {
-    key: 'talon', name: 'タロン', title: 'ステルス狩りの猟兵', color: '#c0ca33', letter: 'Ta',
+    key: 'talon', role: 'assassin', name: 'タロン', title: 'ステルス狩りの猟兵', color: '#c0ca33', letter: 'Ta',
     desc: 'ステルスを見破る索敵能力を持つハンター。隠密キャラの天敵。',
     hp: 490, hpGrow: 72, mana: 265, manaGrow: 30,
     ad: 63, adGrow: 3.6, power: 0, powerGrow: 0,
@@ -1227,7 +1237,7 @@ const HEROES = {
   },
 
   lyra: {
-    key: 'lyra', name: 'リラ', title: '調べの吟遊詩人', color: '#ba68c8', letter: 'L',
+    key: 'lyra', role: 'support', name: 'リラ', title: '調べの吟遊詩人', color: '#ba68c8', letter: 'L',
     desc: '回復・シールド・速度バフで味方を支えるサポート。',
     hp: 510, hpGrow: 77, mana: 375, manaGrow: 43,
     ad: 36, adGrow: 1.9, power: 11, powerGrow: 6,
@@ -1255,7 +1265,7 @@ const HEROES = {
   },
 
   faye: {
-    key: 'faye', name: 'フェイ', title: '森の守り手', color: '#81c784', letter: 'F',
+    key: 'faye', role: 'support', name: 'フェイ', title: '森の守り手', color: '#81c784', letter: 'F',
     desc: '回復とシールドで味方を支える自然のサポート。',
     hp: 515, hpGrow: 78, mana: 370, manaGrow: 43,
     ad: 36, adGrow: 1.9, power: 10, powerGrow: 6,
@@ -1283,7 +1293,7 @@ const HEROES = {
   },
 
   oz: {
-    key: 'oz', name: 'オズ', title: '放浪の錬金術師', color: '#ffb300', letter: 'O',
+    key: 'oz', role: 'support', name: 'オズ', title: '放浪の錬金術師', color: '#ffb300', letter: 'O',
     desc: '酸のダメージと回復で戦線を支えるサポート。',
     hp: 520, hpGrow: 78, mana: 365, manaGrow: 42,
     ad: 38, adGrow: 2.0, power: 11, powerGrow: 6,
@@ -1312,7 +1322,7 @@ const HEROES = {
   },
 
   whit: {
-    key: 'whit', name: 'ウィット', title: '時渡りの魔術師', color: '#26a69a', letter: 'W',
+    key: 'whit', role: 'support', name: 'ウィット', title: '時渡りの魔術師', color: '#26a69a', letter: 'W',
     desc: '速度バフとシールドで戦況をコントロールするサポート。',
     hp: 515, hpGrow: 77, mana: 372, manaGrow: 43,
     ad: 36, adGrow: 1.9, power: 11, powerGrow: 6,
@@ -1340,7 +1350,7 @@ const HEROES = {
   },
 
   boulder: {
-    key: 'boulder', name: 'ボルダー', title: '岩の巨人', color: '#795548', letter: 'Bo',
+    key: 'boulder', role: 'tank', name: 'ボルダー', title: '岩の巨人', color: '#795548', letter: 'Bo',
     desc: '投石と突進スタンで戦線を支えるタンク。',
     hp: 750, hpGrow: 111, mana: 235, manaGrow: 27,
     ad: 53, adGrow: 2.9, power: 0, powerGrow: 0,
@@ -1370,7 +1380,7 @@ const HEROES = {
   },
 
   frostbeard: {
-    key: 'frostbeard', name: 'フロストビアード', title: '氷の重戦士', color: '#0288d1', letter: 'Fr',
+    key: 'frostbeard', role: 'tank', name: 'フロストビアード', title: '氷の重戦士', color: '#0288d1', letter: 'Fr',
     desc: '冷気と防御で敵の勢いを止めるタンク。',
     hp: 755, hpGrow: 111, mana: 240, manaGrow: 27,
     ad: 54, adGrow: 2.9, power: 0, powerGrow: 0,
@@ -1400,7 +1410,7 @@ const HEROES = {
   },
 
   warden: {
-    key: 'warden', name: 'ウォーデン', title: '不落の守護者', color: '#90a4ae', letter: 'Wa',
+    key: 'warden', role: 'tank', name: 'ウォーデン', title: '不落の守護者', color: '#90a4ae', letter: 'Wa',
     desc: 'シールドとスタンで味方を守るガーディアン。',
     hp: 730, hpGrow: 108, mana: 245, manaGrow: 28,
     ad: 52, adGrow: 2.8, power: 0, powerGrow: 0,
@@ -1429,7 +1439,7 @@ const HEROES = {
   },
 
   rook: {
-    key: 'rook', name: 'ルーク', title: '鋼鉄の擁壁', color: '#6d4c41', letter: 'Rk',
+    key: 'rook', role: 'tank', name: 'ルーク', title: '鋼鉄の擁壁', color: '#6d4c41', letter: 'Rk',
     desc: '回復と防御バフで前線に居座るジャガーノート。',
     hp: 770, hpGrow: 113, mana: 230, manaGrow: 26,
     ad: 55, adGrow: 3.0, power: 0, powerGrow: 0,

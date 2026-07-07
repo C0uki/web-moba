@@ -14,34 +14,69 @@ const UI = {
       'respawn-note', 'hud', 'p-letter', 'p-level', 'hpfill', 'hptext', 'manafill',
       'manatext', 'xpfill', 'abilities', 'stat-gold', 'stat-kda', 'stat-cs', 'shop-btn',
       'shop', 'shop-note', 'shop-items', 'shop-stats', 'help', 'hint', 'pause-overlay',
-      'overlay-select', 'hero-cards', 'overlay-over', 'over-title', 'over-stats', 'restart-btn'];
+      'overlay-select', 'hero-cards', 'overlay-over', 'over-title', 'over-stats', 'restart-btn',
+      'lane-picker', 'role-picker'];
     for (const id of ids) this.els[id] = this.$(id);
   },
 
   // ---- ヒーロー選択 ----
   showHeroSelect(onPick) {
     this.cache();
-    const wrap = this.els['hero-cards'];
-    wrap.innerHTML = '';
-    for (const key of HERO_KEYS) {
-      const d = HEROES[key];
-      const card = document.createElement('button');
-      card.className = 'hero-card';
-      card.innerHTML = `
-        <div class="hc-avatar" style="background:${d.color}">${d.letter}</div>
-        <h2>${d.name}</h2>
-        <div class="hc-title">${d.title}</div>
-        <div class="hc-desc">${d.desc}</div>
-        <div class="hc-ab">${d.abilities.map(a => `<b>${a.key}</b>${a.name}: ${a.desc}`).join('<br>')}</div>
-      `;
-      card.addEventListener('click', () => {
-        SFX.init();
-        SFX.play('buy');
-        this.els['overlay-select'].classList.add('hidden');
-        onPick(key);
+    let selectedLane = 'mid';
+    const laneBtns = this.els['lane-picker'].querySelectorAll('.lane-btn');
+    laneBtns.forEach(btn => {
+      if (btn.dataset.lane === selectedLane) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        selectedLane = btn.dataset.lane;
+        laneBtns.forEach(b => b.classList.toggle('active', b === btn));
       });
-      wrap.appendChild(card);
+    });
+
+    // ロール絞り込みボタン (「全て」は固定、残りはROLESから生成)
+    const rolePicker = this.els['role-picker'];
+    for (const r of ROLES) {
+      const btn = document.createElement('button');
+      btn.className = 'role-btn';
+      btn.dataset.role = r.key;
+      btn.textContent = r.label;
+      rolePicker.appendChild(btn);
     }
+    let selectedRole = 'all';
+    const roleBtns = rolePicker.querySelectorAll('.role-btn');
+    roleBtns.forEach(btn => {
+      if (btn.dataset.role === selectedRole) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        selectedRole = btn.dataset.role;
+        roleBtns.forEach(b => b.classList.toggle('active', b === btn));
+        renderCards();
+      });
+    });
+
+    const wrap = this.els['hero-cards'];
+    const renderCards = () => {
+      wrap.innerHTML = '';
+      for (const key of HERO_KEYS) {
+        const d = HEROES[key];
+        if (selectedRole !== 'all' && d.role !== selectedRole) continue;
+        const card = document.createElement('button');
+        card.className = 'hero-card';
+        card.innerHTML = `
+          <div class="hc-avatar" style="background:${d.color}">${d.letter}</div>
+          <h2>${d.name}</h2>
+          <div class="hc-title">${d.title}</div>
+          <div class="hc-desc">${d.desc}</div>
+          <div class="hc-ab">${d.abilities.map(a => `<b>${a.key}</b>${a.name}: ${a.desc}`).join('<br>')}</div>
+        `;
+        card.addEventListener('click', () => {
+          SFX.init();
+          SFX.play('buy');
+          this.els['overlay-select'].classList.add('hidden');
+          onPick(key, selectedLane);
+        });
+        wrap.appendChild(card);
+      }
+    };
+    renderCards();
   },
 
   // ---- HUD 初期化 ----
