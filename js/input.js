@@ -25,6 +25,7 @@ function setupInput(game, canvas) {
     let target = null, bd = Infinity;
     for (const u of game.units) {
       if (u.team !== enemyOf(p.team) || u.dead) continue;
+      if (u.kind === 'hero' && u.stealth && !isRevealed(game, u)) continue;
       const d = distXY(w.x, w.y, u.x, u.y);
       if (d < u.radius + 26 && d < bd) { bd = d; target = u; }
     }

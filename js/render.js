@@ -93,7 +93,17 @@ const Renderer = {
       if (u.kind === 'minion' && !u.dead) this.drawMinion(c, u);
     }
     for (const h of game.heroes) {
-      if (!h.dead) this.drawHero(c, h, game);
+      if (h.dead) continue;
+      const hiddenEnemy = h.team !== game.player.team && h.stealth;
+      if (hiddenEnemy && !isRevealed(game, h)) continue;
+      if (hiddenEnemy) {
+        c.save();
+        c.globalAlpha = 0.45;
+        this.drawHero(c, h, game);
+        c.restore();
+      } else {
+        this.drawHero(c, h, game);
+      }
     }
     for (const p of game.projectiles) this.drawProjectile(c, p);
     for (const e of game.effects) this.drawEffect(c, e);
@@ -286,6 +296,19 @@ const Renderer = {
       c.stroke();
     }
 
+    // ステルスリング
+    if (h.stealth) {
+      c.save();
+      c.setLineDash([6, 5]);
+      c.beginPath();
+      c.arc(h.x, h.y, h.radius + 9, 0, Math.PI * 2);
+      c.strokeStyle = 'rgba(220,220,255,0.75)';
+      c.lineWidth = 2;
+      c.stroke();
+      c.setLineDash([]);
+      c.restore();
+    }
+
     // プレイヤーマーカー
     if (h === game.player) {
       c.beginPath();
@@ -438,6 +461,7 @@ const Renderer = {
     // ヒーロー
     for (const h of game.heroes) {
       if (h.dead) continue;
+      if (h.team !== game.player.team && h.stealth && !isRevealed(game, h)) continue;
       c.beginPath();
       c.arc(h.x * s, h.y * s, 4, 0, Math.PI * 2);
       c.fillStyle = h.def.color;

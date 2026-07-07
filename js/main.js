@@ -3,6 +3,9 @@
 
 let game = null;
 
+// canvas以外(HUDやショップ等)で右クリックしてもブラウザメニューを出さない
+document.addEventListener('contextmenu', e => e.preventDefault());
+
 window.addEventListener('load', () => {
   const canvas = document.getElementById('game');
   Renderer.init(canvas);

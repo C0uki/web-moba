@@ -217,6 +217,8 @@ class Game {
       if (src === this.player) this.floater(target.x, target.y - 30, '無敵', '#9e9e9e');
       return 0;
     }
+    if (src && src.stealth) { src.stealth = false; src.stealthT = 0; }
+    if (target.stealth) { target.stealth = false; target.stealthT = 0; }
     let dmg = amount;
     if (!opts.trueDmg) {
       const armor = Math.max(0, target.armor || 0);
@@ -265,6 +267,17 @@ class Game {
       if (distXY(x, y, u.x, u.y) <= r + u.radius) targets.push(u);
     }
     for (const u of targets) this.dealDamage(src, u, amount, opts);
+  }
+
+  aoeHeal(src, x, y, r, amount) {
+    for (const h of this.heroes) {
+      if (h.team !== src.team || h.dead) continue;
+      if (distXY(x, y, h.x, h.y) > r + h.radius) continue;
+      h.heal(amount);
+      if (src === this.player || h === this.player) {
+        this.floater(h.x, h.y - h.radius - 14, '+' + Math.round(amount), '#8bffb0');
+      }
+    }
   }
 
   // ---- 死亡処理 ----

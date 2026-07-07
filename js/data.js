@@ -233,5 +233,186 @@ const HEROES = {
       },
     ],
   },
+
+  kestrel: {
+    key: 'kestrel', name: 'ケストレル', title: '影渡りの暗殺者', color: '#c77dff', letter: 'K',
+    desc: '死角から仕留めるアサシン。ステルスで接近し、瀕死の獲物には止めの一撃が突き刺さる。被弾には弱いので一撃離脱が命。',
+    hp: 480, hpGrow: 70, mana: 260, manaGrow: 30,
+    ad: 66, adGrow: 3.8, power: 0, powerGrow: 0,
+    armor: 14, armorGrow: 2.4, range: 105, atkCd: 0.95, speed: 305, radius: 20,
+    aiBuild: ['sword', 'dagger', 'sword', 'vamp', 'sword', 'boots', 'sword'],
+    abilities: [
+      {
+        key: 'Q', name: '処刑の突き', cd: 5, mana: 30,
+        desc: '前方に突きダメージ。残りHPが低い敵ほど追加ダメージ',
+        ai: { mode: 'gap', range: 260 },
+        cast(g, h, tx, ty) {
+          const d = norm(tx - h.x, ty - h.y);
+          if (!d) return false;
+          const dist = Math.min(220, d.len);
+          const ex = clamp(h.x + d.x * dist, 30, CONFIG.WORLD - 30);
+          const ey = clamp(h.y + d.y * dist, 30, CONFIG.WORLD - 30);
+          h.dashState = {
+            tx: ex, ty: ey, speed: 1300,
+            onArrive() {
+              const foe = enemyOf(h.team);
+              for (const u of g.units) {
+                if (u.team !== foe || u.dead) continue;
+                if (u.kind !== 'hero' && u.kind !== 'minion') continue;
+                if (distXY(h.x, h.y, u.x, u.y) > 130 + u.radius) continue;
+                const missing = 1 - u.hp / u.maxHp;
+                const dmg = 40 + 10 * h.level + 0.7 * h.ad + missing * (40 + 6 * h.level);
+                g.dealDamage(h, u, dmg);
+              }
+              g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 130, ttl: 0.3, color: '#c77dff' });
+            },
+          };
+          if (h === g.player) SFX.play('dash');
+          return true;
+        },
+      },
+      {
+        key: 'W', name: '影さすステップ', cd: 13, mana: 45,
+        desc: 'ステルス化+移動速度上昇 (2.5秒・攻撃/被弾で解除)',
+        ai: { mode: 'buff', range: 0 },
+        cast(g, h) {
+          h.stealth = true;
+          h.stealthT = 2.5;
+          h.buffs.push({ t: 2.5, stats: { speed: 60 } });
+          g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 50, ttl: 0.4, color: '#c77dff' });
+          return true;
+        },
+      },
+      {
+        key: 'E', name: '追い討ち', cd: 9, mana: 40,
+        desc: '素早く突進し接触した敵にダメージ',
+        ai: { mode: 'gap', range: 380 },
+        cast(g, h, tx, ty) {
+          const d = norm(tx - h.x, ty - h.y);
+          if (!d) return false;
+          const dist = Math.min(380, d.len);
+          const ex = clamp(h.x + d.x * dist, 30, CONFIG.WORLD - 30);
+          const ey = clamp(h.y + d.y * dist, 30, CONFIG.WORLD - 30);
+          const dmg = 55 + 12 * h.level + 0.6 * h.ad;
+          h.dashState = {
+            tx: ex, ty: ey, speed: 1250,
+            onArrive() {
+              g.aoeDamage(h, h.x, h.y, 140, dmg, {});
+              g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 140, ttl: 0.3, color: '#9c4dff', fill: true });
+            },
+          };
+          if (h === g.player) SFX.play('dash');
+          return true;
+        },
+      },
+    ],
+  },
+
+  sera: {
+    key: 'sera', name: 'セラ', title: '癒しの巫女', color: '#4dd0e1', letter: 'S',
+    desc: '味方を癒し守るサポート。単体火力は低いが、回復・シールド・速度バフで戦況を支える。味方の近くで戦おう。',
+    hp: 520, hpGrow: 78, mana: 380, manaGrow: 44,
+    ad: 38, adGrow: 2.0, power: 10, powerGrow: 6,
+    armor: 18, armorGrow: 2.8, range: 460, atkCd: 1.2, speed: 275, radius: 21,
+    aiBuild: ['hp', 'staff', 'boots', 'armor', 'staff', 'hp', 'armor'],
+    abilities: [
+      {
+        key: 'Q', name: '癒しの光', cd: 7, mana: 50,
+        desc: '自分と周囲の味方のHPを回復',
+        ai: { mode: 'heal', range: 260 },
+        cast(g, h) {
+          const heal = 60 + 14 * h.level + 0.5 * h.power;
+          g.aoeHeal(h, h.x, h.y, 260, heal);
+          g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 260, ttl: 0.4, color: '#8bffb0', fill: true });
+          return true;
+        },
+      },
+      {
+        key: 'W', name: '守りの盾', cd: 12, mana: 55,
+        desc: '自分と周囲の味方にシールドを付与',
+        ai: { mode: 'defense', range: 0 },
+        cast(g, h) {
+          const amt = 90 + 20 * h.level;
+          for (const ally of g.heroes) {
+            if (ally.team !== h.team || ally.dead) continue;
+            if (distU(ally, h) > 260) continue;
+            ally.shield = Math.max(ally.shield, amt);
+            ally.shieldT = 3.5;
+          }
+          g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 260, ttl: 0.5, color: '#e0e0e0' });
+          return true;
+        },
+      },
+      {
+        key: 'E', name: '疾風の加護', cd: 11, mana: 45,
+        desc: '自分と周囲の味方の移動速度を上昇',
+        ai: { mode: 'buff', range: 0 },
+        cast(g, h) {
+          for (const ally of g.heroes) {
+            if (ally.team !== h.team || ally.dead) continue;
+            if (distU(ally, h) > 280) continue;
+            ally.buffs.push({ t: 3, stats: { speed: 50 } });
+          }
+          g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 280, ttl: 0.4, color: '#4dd0e1' });
+          return true;
+        },
+      },
+    ],
+  },
+
+  grom: {
+    key: 'grom', name: 'グロム', title: '不屈の突撃兵', color: '#a1887f', letter: 'G',
+    desc: '突っ込んでスタンを撒く前衛タンク。硬さと足止めで味方に戦機を作る、集団戦のイニシエーター。',
+    hp: 760, hpGrow: 112, mana: 250, manaGrow: 28,
+    ad: 56, adGrow: 3.0, power: 0, powerGrow: 0,
+    armor: 34, armorGrow: 4.2, range: 105, atkCd: 1.1, speed: 270, radius: 25,
+    aiBuild: ['hp', 'armor', 'sword', 'hp', 'armor', 'vamp', 'armor'],
+    abilities: [
+      {
+        key: 'Q', name: '大地割り', cd: 8, mana: 40,
+        desc: '周囲の敵にダメージ+スタン(1秒)',
+        ai: { mode: 'damage', range: 200 },
+        cast(g, h) {
+          const dmg = 55 + 13 * h.level + 0.6 * h.ad;
+          g.aoeDamage(h, h.x, h.y, 210, dmg, { stunT: 1.0 });
+          g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 210, ttl: 0.35, color: '#ffb74d', fill: true });
+          return true;
+        },
+      },
+      {
+        key: 'W', name: '鉄の意志', cd: 14, mana: 45,
+        desc: '自身を回復し防御力+24 (4秒)',
+        ai: { mode: 'defense', range: 0 },
+        cast(g, h) {
+          h.heal(90 + 18 * h.level);
+          h.buffs.push({ t: 4, stats: { armor: 24 } });
+          g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 70, ttl: 0.5, color: '#e0e0e0' });
+          return true;
+        },
+      },
+      {
+        key: 'E', name: '殺到', cd: 10, mana: 40,
+        desc: '突進し、着地点周囲の敵にダメージ+スタン(0.8秒)',
+        ai: { mode: 'gap', range: 380 },
+        cast(g, h, tx, ty) {
+          const d = norm(tx - h.x, ty - h.y);
+          if (!d) return false;
+          const dist = Math.min(380, d.len);
+          const ex = clamp(h.x + d.x * dist, 30, CONFIG.WORLD - 30);
+          const ey = clamp(h.y + d.y * dist, 30, CONFIG.WORLD - 30);
+          const dmg = 55 + 12 * h.level + 0.5 * h.ad;
+          h.dashState = {
+            tx: ex, ty: ey, speed: 1050,
+            onArrive() {
+              g.aoeDamage(h, h.x, h.y, 160, dmg, { stunT: 0.8 });
+              g.addEffect({ kind: 'ring', x: h.x, y: h.y, r: 160, ttl: 0.35, color: '#a1887f', fill: true });
+            },
+          };
+          if (h === g.player) SFX.play('dash');
+          return true;
+        },
+      },
+    ],
+  },
 };
 const HERO_KEYS = Object.keys(HEROES);

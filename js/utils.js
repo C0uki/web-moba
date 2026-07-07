@@ -89,3 +89,14 @@ function formatTime(sec) {
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
   return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
+
+// ステルス中のユニットが敵陣から見えているか (近くに敵ユニットがいれば発見される)
+function isRevealed(g, u) {
+  if (!u.stealth) return true;
+  const seekerTeam = enemyOf(u.team);
+  for (const s of g.units) {
+    if (s.team !== seekerTeam || s.dead) continue;
+    if (distU(s, u) <= 260) return true;
+  }
+  return false;
+}

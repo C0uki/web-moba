@@ -26,10 +26,11 @@ function aiThink(h, g) {
     return;
   }
 
-  // 最寄りの敵ヒーロー
+  // 最寄りの敵ヒーロー (発見できないステルス中の敵は除く)
   let foe = null, fd = Infinity;
   for (const e of g.heroes) {
     if (e.team !== foeTeam || e.dead) continue;
+    if (e.stealth && !isRevealed(g, e)) continue;
     const d = distU(h, e);
     if (d < fd) { fd = d; foe = e; }
   }
@@ -126,9 +127,21 @@ function aiCastAbilities(h, g, foe, escaping) {
       if (mode === 'mobility') {
         const base = BASES[h.team];
         g.castAbility(h, idx, base[0], base[1]);
-      } else if (mode === 'defense') {
+      } else if (mode === 'defense' || mode === 'heal') {
         g.castAbility(h, idx, h.x, h.y);
       }
+      return;
+    }
+
+    if (mode === 'heal') {
+      let needHeal = h.hp < h.maxHp * 0.7;
+      if (!needHeal) {
+        for (const ally of g.heroes) {
+          if (ally.team !== h.team || ally.dead || ally === h) continue;
+          if (distU(ally, h) < 260 && ally.hp < ally.maxHp * 0.6) { needHeal = true; break; }
+        }
+      }
+      if (needHeal) g.castAbility(h, idx, h.x, h.y);
       return;
     }
 

@@ -16,6 +16,7 @@ class Unit {
     this.shield = 0; this.shieldT = 0;
     this.slowT = 0; this.slowF = 1;
     this.stunT = 0;
+    this.stealth = false; this.stealthT = 0;
     this.lifesteal = 0;
     this.target = null;
     this.lastHurtT = -99;
@@ -31,6 +32,10 @@ class Unit {
     if (this.shieldT > 0) {
       this.shieldT -= dt;
       if (this.shieldT <= 0) this.shield = 0;
+    }
+    if (this.stealthT > 0) {
+      this.stealthT -= dt;
+      if (this.stealthT <= 0) this.stealth = false;
     }
   }
 
@@ -110,7 +115,8 @@ class Minion extends Unit {
 
     // 現在のターゲットの有効性チェック
     if (this.target && (this.target.dead || this.target.invulnerable ||
-        distU(this, this.target) > this.aggroRange + 260)) {
+        distU(this, this.target) > this.aggroRange + 260 ||
+        (this.target.kind === 'hero' && this.target.stealth && !isRevealed(g, this.target)))) {
       this.target = null;
     }
     if (!this.target && this.aggroT <= 0) {
@@ -129,6 +135,7 @@ class Minion extends Unit {
     let best = null, bestKey = Infinity;
     for (const u of g.units) {
       if (u.team !== foe || u.dead || u.invulnerable) continue;
+      if (u.kind === 'hero' && u.stealth && !isRevealed(g, u)) continue;
       const d = distU(this, u);
       if (d > this.aggroRange) continue;
       // 優先度: ミニオン < タワー/ネクサス < ヒーロー
@@ -169,7 +176,8 @@ class Tower extends Unit {
   update(g, dt) {
     if (this.dead) return;
     this.tickTimers(dt);
-    if (this.target && (this.target.dead || distU(this, this.target) > this.range + this.radius + 40)) {
+    if (this.target && (this.target.dead || distU(this, this.target) > this.range + this.radius + 40 ||
+        (this.target.kind === 'hero' && this.target.stealth && !isRevealed(g, this.target)))) {
       this.target = null;
     }
     if (!this.target) {
@@ -187,6 +195,7 @@ class Tower extends Unit {
     let bestHero = null, dh = Infinity;
     for (const u of g.units) {
       if (u.team !== foe || u.dead) continue;
+      if (u.kind === 'hero' && u.stealth && !isRevealed(g, u)) continue;
       const d = distU(this, u);
       if (d > this.range + this.radius) continue;
       if (u.kind === 'minion' && d < dm) { dm = d; bestMinion = u; }
@@ -369,7 +378,7 @@ class Hero extends Unit {
       if (this.moveToward(o.x, o.y, dt)) this.order = null;
     } else if (o.type === 'attack') {
       const t = o.target;
-      if (!t || t.dead) { this.order = null; return; }
+      if (!t || t.dead || (t.kind === 'hero' && t.stealth && !isRevealed(g, t))) { this.order = null; return; }
       this.engage(g, dt, t);
     } else if (o.type === 'amove') {
       const t = this.acquire(g, Math.max(this.range + 60, 420));
@@ -387,6 +396,7 @@ class Hero extends Unit {
     let best = null, bestKey = Infinity;
     for (const u of g.units) {
       if (u.team !== foe || u.dead || u.invulnerable) continue;
+      if (u.kind === 'hero' && u.stealth && !isRevealed(g, u)) continue;
       const d = distU(this, u);
       if (d > r) continue;
       const prio = u.kind === 'hero' ? 0 : 1;
