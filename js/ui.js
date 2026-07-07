@@ -15,8 +15,28 @@ const UI = {
       'manatext', 'xpfill', 'abilities', 'stat-gold', 'stat-kda', 'stat-cs', 'shop-btn',
       'shop', 'shop-note', 'shop-items', 'shop-stats', 'help', 'hint', 'pause-overlay',
       'overlay-select', 'hero-cards', 'overlay-over', 'over-title', 'over-stats', 'restart-btn',
-      'lane-picker', 'role-picker'];
+      'lane-picker', 'role-picker', 'ability-tooltip'];
     for (const id of ids) this.els[id] = this.$(id);
+  },
+
+  showAbilityTooltip(slot, a) {
+    const tip = this.els['ability-tooltip'];
+    tip.innerHTML = `
+      <div class="tip-title">${a.key} ・ ${a.name}</div>
+      <div class="tip-stats">CD ${a.cd}秒 / マナ ${a.mana}</div>
+      <div class="tip-desc">${a.desc}</div>
+    `;
+    tip.classList.remove('hidden');
+    const r = slot.getBoundingClientRect();
+    const tr = tip.getBoundingClientRect();
+    let left = r.left + r.width / 2 - tr.width / 2;
+    left = clamp(left, 8, window.innerWidth - tr.width - 8);
+    tip.style.left = left + 'px';
+    tip.style.top = (r.top - tr.height - 10) + 'px';
+  },
+
+  hideAbilityTooltip() {
+    this.els['ability-tooltip'].classList.add('hidden');
   },
 
   // ---- ヒーロー選択 ----
@@ -97,8 +117,9 @@ const UI = {
     p.def.abilities.forEach((a, i) => {
       const slot = document.createElement('div');
       slot.className = 'slot' + (a.key === 'R' ? ' ultimate' : '');
-      slot.title = `${a.name} (CD ${a.cd}秒 / マナ ${a.mana})\n${a.desc}`;
       slot.innerHTML = `<span class="ab-key">${a.key}</span><span class="ab-mana">${a.mana}</span><span class="ab-cd hidden"></span>`;
+      slot.addEventListener('mouseenter', () => this.showAbilityTooltip(slot, a));
+      slot.addEventListener('mouseleave', () => this.hideAbilityTooltip());
       ab.appendChild(slot);
       this.slotEls.push({ el: slot, cd: slot.querySelector('.ab-cd') });
     });

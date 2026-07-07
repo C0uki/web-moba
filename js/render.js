@@ -84,6 +84,8 @@ const Renderer = {
 
     this.drawMap(c);
 
+    for (const z of game.zones) this.drawZone(c, z);
+
     // 構造物 → ミニオン → ヒーロー → 弾 → エフェクト
     for (const u of game.units) {
       if (u.kind === 'tower') this.drawTower(c, u);
@@ -178,6 +180,23 @@ const Renderer = {
       c.fillStyle = t.shade > 0.5 ? '#1b2f1f' : '#182a1c';
       c.fill();
     }
+  },
+
+  drawZone(c, z) {
+    const prog = clamp(z.age / z.duration, 0, 1);
+    const pulse = 0.5 + 0.15 * Math.sin(z.age * 6);
+    c.globalAlpha = (1 - prog * 0.35) * pulse;
+    c.beginPath();
+    c.arc(z.x, z.y, z.r, 0, Math.PI * 2);
+    c.fillStyle = z.color;
+    c.fill();
+    c.globalAlpha = 1 - prog * 0.2;
+    c.beginPath();
+    c.arc(z.x, z.y, z.r, 0, Math.PI * 2);
+    c.strokeStyle = z.color;
+    c.lineWidth = 2;
+    c.stroke();
+    c.globalAlpha = 1;
   },
 
   drawBar(c, x, y, w, h, frac, color, extra) {
