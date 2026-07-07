@@ -2,7 +2,7 @@
 'use strict';
 
 class Game {
-  constructor(playerHeroKey) {
+  constructor(playerHeroKey, playerLane) {
     this.time = 0;
     this.over = false;
     this.paused = false;
@@ -28,7 +28,7 @@ class Game {
     this.waveT = CONFIG.FIRST_WAVE;
 
     this.buildStructures();
-    this.buildHeroes(playerHeroKey);
+    this.buildHeroes(playerHeroKey, playerLane || 'mid');
 
     this.camera = { x: this.player.x, y: this.player.y, zoom: 0.85 };
 
@@ -53,15 +53,16 @@ class Game {
     }
   }
 
-  buildHeroes(playerKey) {
+  buildHeroes(playerKey, playerLane) {
     const names = shuffle(BOT_NAMES);
     let ni = 0;
 
-    this.player = new Hero('blue', playerKey, { isBot: false, name: 'あなた', lane: 'mid' });
+    this.player = new Hero('blue', playerKey, { isBot: false, name: 'あなた', lane: playerLane });
     this.heroes.push(this.player);
 
-    // 味方ボット4体 (プレイヤーのmidを除く top/top/bot/bot の4枠)
-    const allyLanes = LANE_ASSIGN_5.filter(l => l !== 'mid');
+    // 味方ボット4体 (プレイヤーが選んだレーンを1枠除いた残り4枠)
+    const allyLanes = LANE_ASSIGN_5.slice();
+    allyLanes.splice(allyLanes.indexOf(playerLane), 1);
     const allyKeys = shuffle(HERO_KEYS.filter(k => k !== playerKey));
     while (allyKeys.length < allyLanes.length) allyKeys.push(HERO_KEYS[randInt(0, HERO_KEYS.length - 1)]);
     allyLanes.forEach((lane, i) => {

@@ -10,8 +10,8 @@ window.addEventListener('load', () => {
   const canvas = document.getElementById('game');
   Renderer.init(canvas);
 
-  UI.showHeroSelect(heroKey => {
-    game = new Game(heroKey);
+  UI.showHeroSelect((heroKey, lane) => {
+    game = new Game(heroKey, lane);
     UI.initHUD(game);
     setupInput(game, canvas);
     startLoop();

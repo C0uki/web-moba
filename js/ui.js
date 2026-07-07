@@ -14,13 +14,24 @@ const UI = {
       'respawn-note', 'hud', 'p-letter', 'p-level', 'hpfill', 'hptext', 'manafill',
       'manatext', 'xpfill', 'abilities', 'stat-gold', 'stat-kda', 'stat-cs', 'shop-btn',
       'shop', 'shop-note', 'shop-items', 'shop-stats', 'help', 'hint', 'pause-overlay',
-      'overlay-select', 'hero-cards', 'overlay-over', 'over-title', 'over-stats', 'restart-btn'];
+      'overlay-select', 'hero-cards', 'overlay-over', 'over-title', 'over-stats', 'restart-btn',
+      'lane-picker'];
     for (const id of ids) this.els[id] = this.$(id);
   },
 
   // ---- ヒーロー選択 ----
   showHeroSelect(onPick) {
     this.cache();
+    let selectedLane = 'mid';
+    const laneBtns = this.els['lane-picker'].querySelectorAll('.lane-btn');
+    laneBtns.forEach(btn => {
+      if (btn.dataset.lane === selectedLane) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        selectedLane = btn.dataset.lane;
+        laneBtns.forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
     const wrap = this.els['hero-cards'];
     wrap.innerHTML = '';
     for (const key of HERO_KEYS) {
@@ -38,7 +49,7 @@ const UI = {
         SFX.init();
         SFX.play('buy');
         this.els['overlay-select'].classList.add('hidden');
-        onPick(key);
+        onPick(key, selectedLane);
       });
       wrap.appendChild(card);
     }
