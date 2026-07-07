@@ -388,6 +388,128 @@ function mkChain({ key, name, desc, cd, mana, range, jumps, jumpRadius, color, d
   };
 }
 
+// 設置型の持続ゾーン (敵にダメージ/スロー、または味方に回復/バフを継続付与)
+function mkZone({ key, name, desc, cd, mana, range, radius, duration, tickInterval, color, aiMode, targetTeam, onTickUnit }) {
+  return {
+    key, name, desc, cd, mana,
+    ai: { mode: aiMode, range },
+    cast(g, h, tx, ty) {
+      const d = norm(tx - h.x, ty - h.y);
+      const dist = d ? Math.min(range, d.len) : 0;
+      const zx = d ? clamp(h.x + d.x * dist, 30, CONFIG.WORLD - 30) : h.x;
+      const zy = d ? clamp(h.y + d.y * dist, 30, CONFIG.WORLD - 30) : h.y;
+      const casterTeam = h.team;
+      g.zones.push({
+        x: zx, y: zy, r: radius, color, duration, tickInterval, age: 0, tickAcc: tickInterval,
+        onTick(game) {
+          for (const u of game.units) {
+            if (u.dead) continue;
+            if (targetTeam === 'ally') {
+              if (u.kind !== 'hero' || u.team !== casterTeam) continue;
+            } else {
+              if (u.team !== enemyOf(casterTeam) || (u.kind !== 'hero' && u.kind !== 'minion')) continue;
+            }
+            if (distXY(zx, zy, u.x, u.y) > radius + u.radius) continue;
+            onTickUnit(game, h, u);
+          }
+        },
+      });
+      g.addEffect({ kind: 'ring', x: zx, y: zy, r: radius * 0.5, ttl: 0.3, color });
+      return true;
+    },
+  };
+}
+
+// 指定地点付近の敵を中心に引き寄せてダメージ+スロー
+function mkVortex({ key, name, desc, cd, mana, range, radius, color, dmg, pullDist, opts = {} }) {
+  return {
+    key, name, desc, cd, mana,
+    ai: { mode: 'damage', range },
+    cast(g, h, tx, ty) {
+      const d = norm(tx - h.x, ty - h.y);
+      const dist = d ? Math.min(range, d.len) : 0;
+      const cx = d ? clamp(h.x + d.x * dist, 30, CONFIG.WORLD - 30) : h.x;
+      const cy = d ? clamp(h.y + d.y * dist, 30, CONFIG.WORLD - 30) : h.y;
+      const foe = enemyOf(h.team);
+      for (const u of g.units) {
+        if (u.team !== foe || u.dead) continue;
+        if (u.kind !== 'hero' && u.kind !== 'minion') continue;
+        if (distXY(cx, cy, u.x, u.y) > radius + u.radius) continue;
+        const pd = norm(cx - u.x, cy - u.y);
+        if (pd) {
+          const pull = Math.min(pullDist, Math.max(0, pd.len - 20));
+          u.x = clamp(u.x + pd.x * pull, 30, CONFIG.WORLD - 30);
+          u.y = clamp(u.y + pd.y * pull, 30, CONFIG.WORLD - 30);
+        }
+        g.dealDamage(h, u, dmg(h), opts);
+      }
+      g.addEffect({ kind: 'ring', x: cx, y: cy, r: radius, ttl: 0.45, color, fill: true });
+      return true;
+    },
+  };
+}
+
+// マウス方向に扇状の3本の弾を放つ
+function mkFan({ key, name, desc, cd, mana, range, speed = 1100, radius, color, pierce = false, spreadDeg = 14, dmg, opts = {} }) {
+  return {
+    key, name, desc, cd, mana,
+    ai: { mode: 'damage', range },
+    cast(g, h, tx, ty) {
+      const d = norm(tx - h.x, ty - h.y);
+      if (!d) return false;
+      const baseAng = Math.atan2(d.y, d.x);
+      const amount = dmg(h);
+      const spread = spreadDeg * Math.PI / 180;
+      [-spread, 0, spread].forEach(off => {
+        const ang = baseAng + off;
+        const dx = Math.cos(ang), dy = Math.sin(ang);
+        g.shootLine({
+          src: h, x: h.x, y: h.y, dx, dy,
+          speed, range, radius, color, pierce,
+          onHitUnit(u) {
+            g.dealDamage(h, u, amount, opts);
+            g.addEffect({ kind: 'ring', x: u.x, y: u.y, r: 45, ttl: 0.22, color });
+          },
+        });
+      });
+      return true;
+    },
+  };
+}
+
+// マウス方向の直線上にいる最も近い敵を引き寄せてダメージ
+function mkPull({ key, name, desc, cd, mana, range, radius = 70, color, dmg, pullDist, opts = {} }) {
+  return {
+    key, name, desc, cd, mana,
+    ai: { mode: 'gap', range },
+    cast(g, h, tx, ty) {
+      const d = norm(tx - h.x, ty - h.y);
+      if (!d) return false;
+      const foe = enemyOf(h.team);
+      let target = null, bd = Infinity;
+      for (const u of g.units) {
+        if (u.team !== foe || u.dead) continue;
+        if (u.kind !== 'hero' && u.kind !== 'minion') continue;
+        const proj = (u.x - h.x) * d.x + (u.y - h.y) * d.y;
+        if (proj < 0 || proj > range) continue;
+        const perp = Math.abs((u.x - h.x) * d.y - (u.y - h.y) * d.x);
+        if (perp > radius) continue;
+        if (proj < bd) { bd = proj; target = u; }
+      }
+      if (!target) return false;
+      const pd = norm(h.x - target.x, h.y - target.y);
+      if (pd) {
+        const pull = Math.min(pullDist, Math.max(0, pd.len - 60));
+        target.x = clamp(target.x + pd.x * pull, 30, CONFIG.WORLD - 30);
+        target.y = clamp(target.y + pd.y * pull, 30, CONFIG.WORLD - 30);
+      }
+      g.dealDamage(h, target, dmg(h), opts);
+      g.addEffect({ kind: 'ring', x: target.x, y: target.y, r: 55, ttl: 0.3, color });
+      return true;
+    },
+  };
+}
+
 // ---- ロール ----
 const ROLES = [
   { key: 'mage', label: 'メイジ' },
@@ -783,16 +905,17 @@ const HEROES = {
 
   nyx: {
     key: 'nyx', role: 'mage', name: 'ナイクス', title: 'ヴォイドの魔導士', color: '#673ab7', letter: 'N',
-    desc: '虚空の力を操るメイジ。スロー付きの直線弾と設置型の大爆発で戦線を制圧する。',
+    desc: '虚空の力を操るメイジ。設置した領域でじわじわ削り、引き寄せの渦で敵陣を崩壊させる。',
     hp: 530, hpGrow: 80, mana: 410, manaGrow: 46,
     ad: 34, adGrow: 2.0, power: 16, powerGrow: 9,
     armor: 15, armorGrow: 2.8, range: 440, atkCd: 1.15, speed: 280, radius: 21,
     aiBuild: ['staff', 'hp', 'staff', 'armor', 'boots', 'staff', 'staff'],
     abilities: [
-      mkLine({
-        key: 'Q', name: 'ヴォイドボルト', cd: 5, mana: 40, range: 760, radius: 22, color: '#9575cd',
-        desc: '直線状の敵にダメージ+スロー', opts: { slowF: 0.6, slowT: 1.3 },
-        dmg: h => 65 + 15 * h.level + 0.7 * h.power,
+      mkZone({
+        key: 'Q', name: 'ヴォイドゾーン', cd: 8, mana: 45, range: 700, radius: 190,
+        duration: 3, tickInterval: 0.5, color: '#7e57c2', aiMode: 'damage', targetTeam: 'enemy',
+        desc: '指定地点に虚空の領域を展開。範囲内の敵に継続ダメージ+スロー',
+        onTickUnit: (g, h, u) => g.dealDamage(h, u, 11 + 2.4 * h.level + 0.12 * h.power, { slowF: 0.65, slowT: 0.6 }),
       }),
       mkSelfShield({
         key: 'W', name: 'シャドウベール', cd: 12, mana: 50, t: 3, color: '#673ab7',
@@ -802,17 +925,17 @@ const HEROES = {
         key: 'E', name: 'ワープステップ', cd: 13, mana: 45, range: 340, color: '#b39ddb',
         desc: 'マウス方向へ瞬間移動',
       }),
-      mkGroundNova({
-        key: 'R', name: 'ヴォイドノヴァ', cd: 72, mana: 95, range: 700, radius: 220, color: '#4a148c',
-        desc: '指定地点に大爆発を起こし、範囲内の敵に大ダメージ+スロー',
-        dmg: h => 135 + 28 * h.level + 1.0 * h.power, opts: { slowF: 0.5, slowT: 1.5 },
+      mkVortex({
+        key: 'R', name: 'ヴォイドコラプス', cd: 80, mana: 95, range: 700, radius: 260, color: '#4a148c',
+        desc: '指定地点に虚空の渦を発生させ、範囲内の敵を中心へ引き寄せ大ダメージ+スロー',
+        dmg: h => 110 + 22 * h.level + 0.9 * h.power, pullDist: 220, opts: { slowF: 0.55, slowT: 1.2 },
       }),
     ],
   },
 
   pyra: {
     key: 'pyra', role: 'mage', name: 'パイラ', title: '紅蓮の魔導士', color: '#ff5722', letter: 'P',
-    desc: '炎で全てを焼き尽くすメイジ。貫通する炎の槍とメテオで広範囲を制圧する。',
+    desc: '炎で全てを焼き尽くすメイジ。貫通する炎の槍と燃え広がる炎で持続的に戦線を焼く。',
     hp: 525, hpGrow: 79, mana: 405, manaGrow: 45,
     ad: 34, adGrow: 2.0, power: 17, powerGrow: 9,
     armor: 15, armorGrow: 2.8, range: 430, atkCd: 1.15, speed: 280, radius: 21,
@@ -822,27 +945,30 @@ const HEROES = {
         key: 'Q', name: '火炎の槍', cd: 4.5, mana: 38, range: 700, radius: 24, color: '#ff7043',
         pierce: true, desc: '直線を貫く火炎の槍', dmg: h => 60 + 14 * h.level + 0.65 * h.power,
       }),
-      mkSelfNova({
-        key: 'W', name: '灼熱波', cd: 9, mana: 55, radius: 230, color: '#ffab40',
-        desc: '周囲の敵にダメージ', dmg: h => 65 + 13 * h.level + 0.55 * h.power,
+      mkZone({
+        key: 'W', name: '業火の陣', cd: 10, mana: 55, range: 420, radius: 200,
+        duration: 3.5, tickInterval: 0.5, color: '#ffab40', aiMode: 'damage', targetTeam: 'enemy',
+        desc: '指定地点に業火を展開。範囲内の敵に継続ダメージ',
+        onTickUnit: (g, h, u) => g.dealDamage(h, u, 12 + 2.6 * h.level + 0.13 * h.power),
       }),
       mkBlink({
         key: 'E', name: '火炎ダッシュ', cd: 12, mana: 45, range: 320, color: '#ff8a65',
         desc: 'マウス方向へ瞬間移動',
       }),
-      mkGroundNova({
-        key: 'R', name: 'メテオ', cd: 75, mana: 100, range: 720, radius: 250, color: '#d84315',
-        desc: '指定地点に隕石を落とし大ダメージ', dmg: h => 150 + 32 * h.level + 1.15 * h.power,
+      mkChain({
+        key: 'R', name: '業火連鎖', cd: 75, mana: 100, range: 700, jumps: 4, jumpRadius: 320,
+        color: '#d84315', desc: '炎が敵から敵へ燃え移り、触れた敵全てに大ダメージ',
+        dmg: h => 95 + 20 * h.level + 0.85 * h.power,
       }),
     ],
   },
 
   glacia: {
     key: 'glacia', role: 'mage', name: 'グラシア', title: '氷結の魔導士', color: '#00acc1', letter: 'Gc',
-    desc: '氷で敵を縛るメイジ。強力なスロー効果で追撃と逃走をコントロールする。',
-    hp: 535, hpGrow: 80, mana: 400, manaGrow: 45,
+    desc: '氷で敵を縛るメイジ。瞬間移動を持たない代わりに、凍土とフックで敵を逃さず拘束し続ける。',
+    hp: 545, hpGrow: 82, mana: 400, manaGrow: 45,
     ad: 34, adGrow: 2.0, power: 15, powerGrow: 8,
-    armor: 16, armorGrow: 2.9, range: 430, atkCd: 1.18, speed: 278, radius: 21,
+    armor: 17, armorGrow: 3.0, range: 430, atkCd: 1.18, speed: 275, radius: 21,
     aiBuild: ['staff', 'hp', 'staff', 'armor', 'boots', 'staff', 'staff'],
     abilities: [
       mkLine({
@@ -850,14 +976,16 @@ const HEROES = {
         desc: '直線状の敵にダメージ+強力なスロー', opts: { slowF: 0.55, slowT: 1.6 },
         dmg: h => 62 + 14 * h.level + 0.6 * h.power,
       }),
-      mkSelfNova({
-        key: 'W', name: '凍える大地', cd: 10, mana: 55, radius: 240, color: '#80deea',
-        desc: '周囲の敵にダメージ+スロー', opts: { slowF: 0.6, slowT: 1.8 },
-        dmg: h => 55 + 11 * h.level + 0.5 * h.power,
+      mkZone({
+        key: 'W', name: '凍える大地', cd: 10, mana: 55, range: 380, radius: 220,
+        duration: 3, tickInterval: 0.5, color: '#80deea', aiMode: 'damage', targetTeam: 'enemy',
+        desc: '指定地点を凍らせ持続ダメージ+継続スロー',
+        onTickUnit: (g, h, u) => g.dealDamage(h, u, 8 + 1.8 * h.level + 0.1 * h.power, { slowF: 0.6, slowT: 0.6 }),
       }),
-      mkBlink({
-        key: 'E', name: '氷結ステップ', cd: 13, mana: 45, range: 330, color: '#b2ebf2',
-        desc: 'マウス方向へ瞬間移動',
+      mkPull({
+        key: 'E', name: '氷の鎖', cd: 12, mana: 45, range: 480, radius: 60, color: '#b2ebf2',
+        desc: '直線上の敵を鎖で引き寄せダメージ+スロー', pullDist: 260,
+        dmg: h => 45 + 10 * h.level + 0.5 * h.power, opts: { slowF: 0.6, slowT: 1.2 },
       }),
       mkGroundNova({
         key: 'R', name: 'ブリザード', cd: 78, mana: 100, range: 680, radius: 260, color: '#0097a7',
@@ -898,7 +1026,7 @@ const HEROES = {
 
   ragnar: {
     key: 'ragnar', role: 'fighter', name: 'ラグナー', title: '猛る戦斧の戦士', color: '#d84315', letter: 'R',
-    desc: '怒りに任せて暴れるバーサーカー。吸血と攻撃力アップで長期戦を制す。',
+    desc: '怒りに任せて暴れるバーサーカー。鉤爪で敵を引き寄せ、逃さず刈り取る。',
     hp: 690, hpGrow: 104, mana: 260, manaGrow: 30,
     ad: 60, adGrow: 3.5, power: 0, powerGrow: 0,
     armor: 26, armorGrow: 3.6, range: 105, atkCd: 1.0, speed: 292, radius: 24,
@@ -912,14 +1040,15 @@ const HEROES = {
         key: 'W', name: '闘気', cd: 13, mana: 40, t: 4, stats: { ad: 22, lifesteal: 0.12 },
         color: '#ff7043', desc: '攻撃力・吸血を上昇',
       }),
-      mkDash({
-        key: 'E', name: '踏み込み', cd: 10, mana: 45, range: 430, radius: 165, color: '#d84315',
-        desc: '突進し、着地点周囲にダメージ+スロー', opts: { slowF: 0.65, slowT: 1.3 },
-        dmg: h => 55 + 11 * h.level + 0.5 * h.ad,
+      mkPull({
+        key: 'E', name: '鉤縄の一撃', cd: 11, mana: 42, range: 480, radius: 65, color: '#d84315',
+        desc: '直線上の敵を鉤縄で引き寄せダメージ+スロー', pullDist: 300,
+        dmg: h => 45 + 10 * h.level + 0.45 * h.ad, opts: { slowF: 0.65, slowT: 1.0 },
       }),
-      mkSelfBuff({
-        key: 'R', name: '血の暴走', cd: 80, mana: 70, t: 6, stats: { ad: 45, speed: 35, lifesteal: 0.2 },
-        color: '#bf360c', desc: '攻撃力・移動速度・吸血を大幅上昇(6秒)',
+      mkExecuteDash({
+        key: 'R', name: '血に飢えた追撃', cd: 78, mana: 75, range: 480, radius: 150, color: '#bf360c',
+        desc: '高速で懐に入り大ダメージ。残りHPが低いほど大幅増加',
+        baseDmg: h => 68 + 15 * h.level + 0.8 * h.ad, missingMult: h => 120 + 18 * h.level,
       }),
     ],
   },
@@ -1013,21 +1142,22 @@ const HEROES = {
 
   aria: {
     key: 'aria', role: 'marksman', name: 'アリア', title: '狩猟のクロスボウ使い', color: '#ec407a', letter: 'Ar',
-    desc: '貫通する矢と足止めの罠で敵を追い詰めるマークスマン。',
+    desc: '3方向へのクロスボウ乱れ撃ちと、撒き菱の罠で敵を追い詰めるマークスマン。',
     hp: 545, hpGrow: 83, mana: 290, manaGrow: 35,
     ad: 56, adGrow: 3.3, power: 0, powerGrow: 0,
     armor: 17, armorGrow: 2.9, range: 500, atkCd: 1.05, speed: 283, radius: 20,
     aiBuild: ['sword', 'dagger', 'sword', 'vamp', 'dagger', 'hp', 'sword'],
     abilities: [
-      mkLine({
-        key: 'Q', name: '貫通ボルト', cd: 6, mana: 42, range: 820, speed: 1150, radius: 18,
-        color: '#f06292', pierce: true, desc: '直線上の敵全てを貫くダメージ',
-        dmg: h => 62 + 14 * h.level + 0.75 * h.ad,
+      mkFan({
+        key: 'Q', name: '乱れ撃ち', cd: 6, mana: 42, range: 650, speed: 1150, radius: 16,
+        color: '#f06292', desc: '3方向にクロスボウの矢を放つ',
+        dmg: h => 46 + 10 * h.level + 0.55 * h.ad,
       }),
-      mkSelfNova({
-        key: 'W', name: '撒き菱', cd: 11, mana: 35, radius: 200, color: '#f8bbd0',
-        desc: '足元に撒き菱をまき、ダメージ+スロー', opts: { slowF: 0.55, slowT: 2.0 },
-        dmg: h => 20 + 5 * h.level + 0.2 * h.ad,
+      mkZone({
+        key: 'W', name: '撒き菱', cd: 11, mana: 40, range: 400, radius: 190,
+        duration: 4, tickInterval: 0.5, color: '#f8bbd0', aiMode: 'damage', targetTeam: 'enemy',
+        desc: '指定地点に撒き菱をまき、踏んだ敵に継続ダメージ+スロー',
+        onTickUnit: (g, h, u) => g.dealDamage(h, u, 6 + 1.6 * h.level + 0.15 * h.ad, { slowF: 0.6, slowT: 0.6 }),
       }),
       mkBlink({
         key: 'E', name: '回避ステップ', cd: 9, mana: 35, range: 280, color: '#f48fb1',
@@ -1060,10 +1190,10 @@ const HEROES = {
         key: 'E', name: '後退ステップ', cd: 9, mana: 35, range: 280, color: '#90a4ae',
         desc: 'マウス方向へ短距離ステップ',
       }),
-      mkLine({
-        key: 'R', name: '龍矢', cd: 68, mana: 85, range: 1250, speed: 1550, radius: 24,
-        color: '#263238', pierce: true, desc: '超長射程の貫通する一矢、大ダメージ',
-        dmg: h => 110 + 22 * h.level + 0.95 * h.ad,
+      mkFan({
+        key: 'R', name: '百裂の矢', cd: 68, mana: 85, range: 900, speed: 1400, radius: 22,
+        color: '#263238', pierce: true, spreadDeg: 10, desc: '3方向に貫通する矢を放つ大技',
+        dmg: h => 95 + 19 * h.level + 0.85 * h.ad,
       }),
     ],
   },
@@ -1104,9 +1234,10 @@ const HEROES = {
     armor: 18, armorGrow: 3.0, range: 490, atkCd: 1.0, speed: 286, radius: 20,
     aiBuild: ['sword', 'dagger', 'sword', 'vamp', 'dagger', 'hp', 'sword'],
     abilities: [
-      mkLine({
-        key: 'Q', name: 'バーストファイア', cd: 5.5, mana: 38, range: 650, speed: 1200, radius: 18,
-        color: '#ffb74d', desc: '素早い連射弾', dmg: h => 52 + 12 * h.level + 0.65 * h.ad,
+      mkFan({
+        key: 'Q', name: 'バーストファイア', cd: 5.5, mana: 38, range: 620, speed: 1200, radius: 16,
+        color: '#ffb74d', spreadDeg: 9, desc: '3方向に素早い連射弾を放つ',
+        dmg: h => 38 + 9 * h.level + 0.48 * h.ad,
       }),
       mkSelfBuff({
         key: 'W', name: 'アドレナリン', cd: 13, mana: 40, t: 4, stats: { atkSpeed: 0.4, lifesteal: 0.1 },
@@ -1144,10 +1275,11 @@ const HEROES = {
         key: 'E', name: '茂み駆け', cd: 9, mana: 35, range: 380, radius: 140, color: '#2e7d32',
         desc: '素早く突進し接触した敵にダメージ', dmg: h => 52 + 11 * h.level + 0.55 * h.ad,
       }),
-      mkExecuteDash({
-        key: 'R', name: '猛毒の刃', cd: 78, mana: 85, range: 480, radius: 140, color: '#1b5e20',
-        desc: '高速で懐に入り大ダメージ。残りHPが低いほど大幅増加',
-        baseDmg: h => 65 + 15 * h.level + 0.85 * h.ad, missingMult: h => 120 + 18 * h.level,
+      mkZone({
+        key: 'R', name: '死の毒霧', cd: 80, mana: 85, range: 500, radius: 210,
+        duration: 4, tickInterval: 0.5, color: '#1b5e20', aiMode: 'damage', targetTeam: 'enemy',
+        desc: '猛毒の霧を展開。範囲内の敵に継続ダメージ+スロー',
+        onTickUnit: (g, h, u) => g.dealDamage(h, u, 16 + 3.6 * h.level + 0.2 * h.ad, { slowF: 0.6, slowT: 0.6 }),
       }),
     ],
   },
@@ -1172,10 +1304,10 @@ const HEROES = {
         key: 'E', name: 'ブリンクストライク', cd: 9, mana: 38, range: 400, radius: 130, color: '#3949ab',
         desc: '瞬時に間合いを詰めダメージ', dmg: h => 48 + 10 * h.level + 0.55 * h.ad,
       }),
-      mkExecuteDash({
-        key: 'R', name: 'デスマーク', cd: 80, mana: 85, range: 460, radius: 140, color: '#283593',
-        desc: '一気に距離を詰め大ダメージ。瀕死の敵には致命的',
-        baseDmg: h => 55 + 13 * h.level + 0.7 * h.ad, missingMult: h => 140 + 20 * h.level,
+      mkChain({
+        key: 'R', name: '連鎖する凶刃', cd: 80, mana: 85, range: 420, jumps: 4, jumpRadius: 300,
+        color: '#283593', desc: '刃が敵から敵へ連鎖し、触れた敵全てに大ダメージ',
+        dmg: h => 60 + 13 * h.level + 0.75 * h.ad,
       }),
     ],
   },
@@ -1228,10 +1360,10 @@ const HEROES = {
         key: 'E', name: '追跡本能', cd: 11, mana: 30, t: 3.5, stats: { speed: 55 },
         color: '#f0f4c3', desc: '移動速度を上昇',
       }),
-      mkExecuteDash({
-        key: 'R', name: '仕留めの一撃', cd: 78, mana: 82, range: 460, radius: 140, color: '#827717',
-        desc: '一気に間合いを詰め大ダメージ。瀕死の敵には致命的',
-        baseDmg: h => 60 + 14 * h.level + 0.75 * h.ad, missingMult: h => 125 + 18 * h.level,
+      mkPull({
+        key: 'R', name: '捕縛の一撃', cd: 78, mana: 82, range: 620, radius: 65, color: '#827717',
+        desc: '直線上の敵を銛で引き寄せ大ダメージ+スロー', pullDist: 400,
+        dmg: h => 85 + 17 * h.level + 0.75 * h.ad, opts: { slowF: 0.5, slowT: 1.3 },
       }),
     ],
   },
@@ -1313,10 +1445,11 @@ const HEROES = {
         key: 'E', name: 'クイックステップ', cd: 10, mana: 38, range: 300, color: '#ffecb3',
         desc: 'マウス方向へ短距離ステップ',
       }),
-      mkGlobalTeamHeal({
-        key: 'R', name: '大いなる秘薬', cd: 86, mana: 95, color: '#8bffb0',
-        desc: '距離を問わず味方チーム全員のHPを大きく回復',
-        heal: h => 115 + 19 * h.level + 0.7 * h.power,
+      mkZone({
+        key: 'R', name: '万能の泉', cd: 86, mana: 95, range: 0, radius: 260,
+        duration: 5, tickInterval: 0.5, color: '#8bffb0', aiMode: 'heal', targetTeam: 'ally',
+        desc: '自身を中心に治癒の泉を展開。範囲内の味方を継続回復',
+        onTickUnit: (g, h, u) => u.heal(14 + 3 * h.level + 0.15 * h.power),
       }),
     ],
   },
@@ -1342,16 +1475,18 @@ const HEROES = {
         key: 'E', name: '時渡り', cd: 12, mana: 40, range: 320, color: '#b2dfdb',
         desc: 'マウス方向へ瞬間移動',
       }),
-      mkGlobalTeamShield({
-        key: 'R', name: '時の盾', cd: 85, mana: 92, color: '#00897b', t: 4,
-        desc: '距離を問わず味方チーム全員にシールドを付与', amount: h => 105 + 17 * h.level,
+      mkZone({
+        key: 'R', name: '加速の結界', cd: 85, mana: 92, range: 0, radius: 280,
+        duration: 5, tickInterval: 0.5, color: '#00897b', aiMode: 'buff', targetTeam: 'ally',
+        desc: '自身を中心に加速の結界を展開。範囲内の味方の移動速度・攻撃速度を上昇',
+        onTickUnit: (g, h, u) => u.buffs.push({ t: 0.75, stats: { speed: 45, atkSpeed: 0.25 } }),
       }),
     ],
   },
 
   boulder: {
     key: 'boulder', role: 'tank', name: 'ボルダー', title: '岩の巨人', color: '#795548', letter: 'Bo',
-    desc: '投石と突進スタンで戦線を支えるタンク。',
+    desc: '投石と突進スタン、そして持続する地割れで戦線を支えるタンク。',
     hp: 750, hpGrow: 111, mana: 235, manaGrow: 27,
     ad: 53, adGrow: 2.9, power: 0, powerGrow: 0,
     armor: 33, armorGrow: 4.1, range: 400, atkCd: 1.12, speed: 267, radius: 25,
@@ -1371,10 +1506,11 @@ const HEROES = {
         desc: '突進し、着地点周囲にダメージ+スタン', opts: { stunT: 0.7 },
         dmg: h => 50 + 11 * h.level + 0.5 * h.ad,
       }),
-      mkSelfNova({
-        key: 'R', name: '大地震', cd: 85, mana: 85, radius: 300, color: '#4e342e',
-        desc: '広範囲の敵にダメージ+長時間スタン', opts: { stunT: 1.5 },
-        dmg: h => 85 + 17 * h.level + 0.65 * h.ad,
+      mkZone({
+        key: 'R', name: '断層咆哮', cd: 85, mana: 85, range: 450, radius: 280,
+        duration: 4, tickInterval: 0.8, color: '#4e342e', aiMode: 'damage', targetTeam: 'enemy',
+        desc: '指定地点の地盤を破壊。範囲内の敵に継続ダメージ+スロー',
+        onTickUnit: (g, h, u) => g.dealDamage(h, u, 22 + 4.5 * h.level + 0.35 * h.ad, { slowF: 0.55, slowT: 0.9 }),
       }),
     ],
   },

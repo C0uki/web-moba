@@ -15,6 +15,7 @@ class Game {
     this.nexus = {};
     this.projectiles = [];
     this.effects = [];
+    this.zones = [];
     this.pending = [];
 
     this.feedList = [];
@@ -103,6 +104,7 @@ class Game {
     }
 
     this.updateInvuln();
+    this.updateZones(dt);
 
     for (const u of this.units) {
       if (!u.dead || u.kind === 'hero') u.update(this, dt);
@@ -159,6 +161,20 @@ class Game {
       }
       this.nexus[team].invulnerable = !anyLaneOpen;
     }
+  }
+
+  // ---- 設置ゾーン (持続効果) ----
+  updateZones(dt) {
+    this.zones = this.zones.filter(z => {
+      z.age += dt;
+      if (z.age >= z.duration) return false;
+      z.tickAcc += dt;
+      while (z.tickAcc >= z.tickInterval) {
+        z.tickAcc -= z.tickInterval;
+        z.onTick(this);
+      }
+      return true;
+    });
   }
 
   // ---- 弾 ----

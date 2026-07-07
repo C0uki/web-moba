@@ -120,6 +120,17 @@ html, body {
 }
 #shop-btn:hover { background: #3a5a44; }
 
+/* ---- スキルツールチップ ---- */
+#ability-tooltip {
+  position: fixed; z-index: 45; background: rgba(10, 18, 12, 0.97);
+  border: 1px solid #4d7a58; border-radius: 8px; padding: 10px 14px;
+  max-width: 260px; pointer-events: none; font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+#ability-tooltip .tip-title { font-weight: bold; color: #ffd54f; margin-bottom: 4px; font-size: 13px; }
+#ability-tooltip .tip-stats { color: #8ec8ff; margin-bottom: 6px; }
+#ability-tooltip .tip-desc { color: #d8e8d8; line-height: 1.5; }
+
 #hint {
   position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: #8aa88a;
   background: rgba(10,18,12,0.7); padding: 5px 10px; border-radius: 6px; z-index: 9;
