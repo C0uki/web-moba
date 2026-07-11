@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ミニMOBA - Web MOBA</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -47,6 +47,17 @@
 
 <!-- スキルツールチップ -->
 <div id="ability-tooltip" class="hidden"></div>
+
+<!-- タッチ操作UI (スマホ用) -->
+<div id="joystick" class="hidden"><div id="joy-knob"></div></div>
+<div id="skill-pad" class="hidden">
+  <button class="tbtn" data-ab="0">Q<span class="tcd hidden"></span></button>
+  <button class="tbtn" data-ab="1">W<span class="tcd hidden"></span></button>
+  <button class="tbtn" data-ab="2">E<span class="tcd hidden"></span></button>
+  <button class="tbtn ult" data-ab="3">R<span class="tcd hidden"></span></button>
+  <button class="tbtn small" id="tbtn-recall">B</button>
+  <button class="tbtn atk" id="tbtn-atk">⚔</button>
+</div>
 
 <div id="hint" class="hidden">H: 操作説明 / P: ショップ</div>
 

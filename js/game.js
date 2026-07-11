@@ -34,7 +34,11 @@ class Game {
 
     this.camera = { x: this.player.x, y: this.player.y, zoom: 0.85 };
 
-    this.msg('右クリックで移動・敵を攻撃 / Q W E Rでスキル!', 4);
+    if (typeof IS_TOUCH !== 'undefined' && IS_TOUCH) {
+      this.msg('左のスティックで移動 / 右のボタンでスキル・攻撃!', 4);
+    } else {
+      this.msg('右クリックで移動・敵を攻撃 / Q W E Rでスキル!', 4);
+    }
   }
 
   // ---- セットアップ ----
