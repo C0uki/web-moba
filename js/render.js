@@ -8,6 +8,7 @@ const Renderer = {
   cssH: 0,
   trees: [],
   MINIMAP: 200,
+  mobile: false,
 
   init(canvas) {
     this.canvas = canvas;
@@ -57,6 +58,11 @@ const Renderer = {
   },
 
   minimapRect() {
+    // モバイルでは右下がスキルボタンと重なるため左上に配置
+    if (this.mobile) {
+      const M = 140;
+      return { x: 12, y: 48, w: M, h: M };
+    }
     const M = this.MINIMAP;
     return { x: this.cssW - M - 14, y: this.cssH - M - 14, w: M, h: M };
   },
